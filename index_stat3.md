@@ -10,4 +10,6 @@
 
 4. [Método S1 y S2](Estadistica3/p1/ST4.html)
 
-4. [Modelos AR y MA](Estadistica3/p1/ST5.html)
+5. [Modelos AR y MA](Estadistica3/p1/ST5.html)
+
+6. [Tarea 1](Estadistica3/p1/T1.html)
