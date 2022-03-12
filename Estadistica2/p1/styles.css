@@ -1,0 +1,51 @@
+.oscuro{ 
+    background-color: #1f1f1f; 
+    color: #f1eded; 
+}
+
+p {
+	font-size: 20px;  /*parráfos*/
+}
+
+ul {
+	font-size: 17px;
+}	
+
+ol {
+	font-size: 17px;
+}	
+
+img {
+	width: 100%;
+	height: 100%;
+}
+.img_seis {
+	width: 60%;
+	height: 60%;
+}
+
+.img_cuatro {
+	width: 40%;
+	height: 40%;
+}
+
+.img_tresymedio {
+	width: 35%;
+	height: 35%;
+}
+.img_tres {
+	width: 30%;
+	height: 30%;
+}
+.img_dosymedio {
+	width: 25%;
+	height: 25%;
+}
+.img_dos {
+	width: 20%;
+	height: 20%;
+}
+
+.r {
+	font-size: 17px;
+}
