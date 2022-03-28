@@ -19,3 +19,5 @@
 8. [Tarea 2](Estadistica3/p1/T2_ST.pdf)
 
 9. [Modelo de Box-Jenkinz para modelos ARIMA estacionales](Estadistica3/p1/ST7.html)
+
+10. [Ejemplo práctico (parte I)](Estadistica3/p1/ST8.html)
