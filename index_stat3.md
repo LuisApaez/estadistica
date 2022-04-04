@@ -21,3 +21,5 @@
 9. [Modelo de Box-Jenkinz para modelos ARIMA estacionales](Estadistica3/p1/ST7.html)
 
 10. [Ejemplo práctico (parte I)](Estadistica3/p1/ST8.html)
+
+11. [Ejemplo práctico (parte II): Modelos GARCH](Estadistica3/p1/ST9.html)
