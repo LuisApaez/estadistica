@@ -24,6 +24,6 @@
 
 11. [Ejemplo práctico (parte II): Modelos GARCH](Estadistica3/p1/ST9.html)
 
-12. [Ejemplo práctico (parte II): Modelos GARCH](Estadistica3/p1/ST9.html)
+12. [Tarea 3](Estadistica3/p1/T3.html)
 
 13. [Proyecto 1](Estadistica3/p1/Proyecto1.html)
