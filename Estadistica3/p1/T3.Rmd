@@ -1,0 +1,373 @@
+---
+title: "Análisis de supervivencia y series de tiempo"
+output:
+  pdf_document:
+    toc: yes
+    toc_depth: '5'
+  html_document:
+    toc: yes
+    toc_depth: 5
+    toc_float:
+      collapse: no
+      smooth_scroll: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE)
+library(astsa)
+library(forecast)
+library(ggfortify)
+library(lmtest)
+library(car)
+library(nortest)
+library(tseries)
+library(imputeTS)
+library(dplyr)
+devtools::install_github("FinYang/tsdl")
+library(tsdl)
+```
+
+## Tarea 3
+
+### Integrantes
+
+* González Chávez Nancy Ivette
+* Quiroz Lecona Karla Daniela
+* Apáez Álvarez Luis Fernando
+* Romero Guzmán Kevin Axel
+* Moreno Cruz Iván Alejandro
+
+---
+
+### 1. Análisis descriptivo
+
+Grafique los datos, describa lo que observe (varianza constante o no, descomposición clásica, tendencia, ciclos estacionales, periodicidad de los datos).
+
+**Solución:** Comenzamos por cargar y ver los datos:
+
+```{r}
+ts_122 <- tsdl[[122]]
+ggtsdisplay(ts_122)
+```
+
+
+donde observamos que la serie de tiempo tiene varianza no constante ya que a medida que pasa el tiempo la dispersión de los datos va creciendo. Además, tenemos un ciclo estacional con periocidad de 12 meses. Gracias a la gráfica ACF podemos observar que los datos están correlacionados, al parecer, dada una observación, ésta depende de la observación anterior.
+
+Asimismo podemos observar las siguientes gráficas
+
+```{r}
+autoplot(stl(ts_122, s.window = "periodic"), ts.colour = "blue")
+```
+
+de las cuales, la tendencia sostiene la misma dirección durante un amplio período de tiempo y también puede decirse que ésta es lineal.
+
+
+### 2. Missing data
+
+Suponga que las observaciones de ``1993 Jan, Feb`` y ``1994 Mar`` son datos faltantes, es decir, sustituya estas observaciones por ``NA``
+
+**Solución:**
+
+Los valores que sustituiremos por ``NA's`` son los correspondientes a Enero y Febrero de 1993 y Marzo de 1994. Estos valores los asignaremos a un vector
+
+```{r}
+# Valores observados para estos meses:
+# Jan 1993, Feb 1993, Mar 1994
+valores = c(ts_122[37*12+1], ts_122[37*12+2], ts_122[38*12+3])
+valores
+```
+
+
+Sustitución de los valores en ``1993 Jan, 1993 Feb`` y ``1994 Mar`` por ``NA's``:
+
+```{r}
+# Enero 1993
+ts_122[37*12+1] = NA
+
+# Febrero 1993
+ts_122[37*12+2] = NA
+
+# Marzo 1994
+ts_122[38*12+3] = NA
+
+# Corroboramos que dichos valores tengan NA's asignados
+val_na = c(ts_122[37*12+1], ts_122[37*12+2], ts_122[38*12+3])
+val_na
+```
+
+y procedemos a las imputaciones:
+
+```{r}
+# Serie de tiempo imputando por el método  de medias móviles
+ST1 <- ts_122
+ST1 <- na_ma(ST1)
+valores1 = c(ST1[37*12+1], ST1[37*12+2], ST1[38*12+3])
+valores1
+```
+
+```{r}
+# Serie de tiempo imputando por el método  de medias móviles 
+# con pesos exponenciales
+ST2 <- ts_122
+ST2 <- na_ma(ST2, weighting = "exponential")
+valores2 = c(ST2[37*12+1], ST2[37*12+2], ST2[38*12+3])
+valores2
+```
+
+```{r}
+# Serie de tiempo imputando por el método interpolación
+ST3 <- ts_122
+ST3 <- na_interpolation(ST3)
+valores3 = c(ST3[37*12+1], ST3[37*12+2], ST3[38*12+3])
+valores3
+```
+
+```{r}
+# Serie de tiempo imputando por el método Kalman
+ST4 <- ts_122
+ST4 <- na_kalman(ST4)
+valores4 = c(ST4[37*12+1], ST4[37*12+2], ST4[38*12+3])
+valores4
+```
+
+Y comparamos las aproximaciones obtenidas por los distintos métodos de imputación con los valores observados:
+
+```{r}
+df_im <- data.frame(
+ "Valores observados" = valores,
+ "Método_MA" = valores1, 
+ "Método_MA_wt_exponencial" = valores2,
+ "Método_de_interpolación" = valores3,
+ "Método_de_Kalman" = valores4
+)
+df_im
+```
+
+Así, de acuerdo a los distintos métodos empleados, concluimos que el método 
+de medias móviles y el método de Kalman son los mejores.
+
+
+### 3. Ajuste
+
+Con los datos observados completos, ajuste un modelo ARIMA o SARIMA adecuado.
+
+* Obtenga correlogramas, revise si los parámetros son significativos, compruebe los supuestos (que los residuales sean ruido blanco)
+* Obtenga dos o más posibles modelos, realice análisis de los residuales y calcule medidas de bondad de ajuste. Haga la comparación para decidir cuál modelo sería el más adecuado
+
+**Solución:** Antes, regresamos a los valores originales para Enero y Febrero de 1993 y Marzo de 1994 
+
+```{r}
+# Enero 1993
+ts_122[37*12+1] = valores[1]
+
+# Febrero 1993
+ts_122[37*12+2] = valores[2]
+
+# Marzo 1994
+ts_122[38*12+3] = valores[3]
+```
+
+Comprobamos que la serie ya no tiene valores faltantes:
+
+```{r}
+summary(ts_122)
+```
+
+---
+
+Ahora bien, nuevamente observemos la gráfica de la serie de tiempo
+
+```{r}
+autoplot(ts_122)
+```
+
+como bien dijimos antes, notamos que al varianza es creciente, por ende proponemos como primer modelo el resultante de aplicar logaritmo a las observaciones
+
+```{r}
+ts_model1 <- log(ts_122)
+autoplot(ts_model1)
+```
+
+la cual "parece" tener varianza constante. Asimismo, vemos que es necesario que se realice al menos una diferenciación en los datos para quitar la tendencia. Proseguimos realizando el ajuste a un modelo de tipo ARIMA/SARIMA:
+
+```{r}
+fit1 <- auto.arima(ts_model1)
+fit1
+```
+
+donde el modelo que obtenemos es un $SARIMA(0,1,1)(2,1,1)_{12}$. Con base en el modelo obtenido anteriormente, con las observaciones de las gráficas y con diversas pruebas hechas buscando mejores modelos, proponemos el siguiente modelo
+
+```{r}
+fit11 <- arima(diff(ts_model1,12), c(2, 0, 2), seasonal = list(order = c(0, 1, 0), period = 12))
+ggtsdisplay(fit11$residuals)
+```
+
+y continuamos realizando el análisis de los supuestos:
+
+**Estacionariedad:**
+
+```{r}
+# Modelo transformado
+adf.test(diff(ts_model1,12))
+
+# Datos originales
+adf.test(ts_122)
+```
+
+en ambos no se rechaza $H_{0}$, es decir, es plausible asumir que la serie (original y transformada) no es estacionaria.
+
+**Normalidad:**
+
+Comenzamos por ver la qq-plot correspondiente a los residuales:
+
+```{r}
+ggplot(fit11, aes(sample=fit11$residuals)) + 
+  stat_qq() + 
+  stat_qq_line(col="red", size=1) +
+  ggtitle("QQ-plot")
+```
+
+donde, al parecer, los residuales siguen una distribución normal. Comprobamos realizando la prueba de _Anderson-Darling_:
+
+```{r}
+ad.test(fit11$residuals)
+```
+
+de donde no rechazamos $H_{0}$, es decir, es plausible asumir que los residuales siguen una distribución normal.
+
+**Independencia:** Realizamos la prueba de _Box-Pierce_ en diversos valores del lag para ver si hay "independencia" entre las observaciones:
+
+```{r}
+Box.test(fit11$residuals) 
+Box.test(fit11$residuals,lag=1) 
+Box.test(fit11$residuals,lag=18) 
+Box.test(fit11$residuals,lag=19) 
+Box.test(fit11$residuals,lag=12) 
+Box.test(fit11$residuals,lag=24) 
+```
+
+vemos que para diversos valores del lag se está rechazando la hipótesis nula, es decir, se está rechazando la "independencia" entre observaciones. Se concluye que este supuesto NO se está cumpliendo.
+
+**Varianza constante:** Para verificar este supuesto realizaremos la prueba de _Breusch_pagan_ y la prueba _Non-constant Variance Score Test_:
+
+```{r}
+Y <- as.numeric(fit11$residuals)
+X <- 1:length(fit11$residuals)
+bptest(Y ~ X)  
+ncvTest(lm(Y~X)) 
+```
+
+en ambas no se rechaza $H_{0}$, es decir, no se rechaza que la varianza sea constante.
+
+---
+
+Lo que sigue a continuación es repetir el proceso con otros modelos (especificamente con otros dos modelos):
+
+```{r}
+# Probamos con otras dos transformaciones:
+
+fit2 <- arima(diff(ts_122,12), c(1, 1, 2), seasonal = list(order = c(1 ,1, 1), period = 12))
+fit3 <- arima(diff(diff(ts_model1,12)), c(2, 0, 2), seasonal = list(order = c(0, 0, 1), period = 12))
+```
+
+**Normalidad:**
+
+```{r}
+ad.test(fit2$residuals)
+ad.test(fit3$residuals)
+```
+
+en ambos modelos se rechaza $H_{0}$, es decir, se rechaza la normalidad.
+
+**Varianza constante:**
+
+```{r}
+# Para el modelo fit2:
+
+Y2 <- as.numeric(fit2$residuals)
+X2 <- 1:length(fit2$residuals)
+bptest(Y2 ~ X2)  
+ncvTest(lm(Y2~X2)) 
+
+# Para el modelo fit3:
+
+Y3 <- as.numeric(fit3$residuals)
+X3 <- 1:length(fit3$residuals)
+bptest(Y3 ~ X3)  
+ncvTest(lm(Y3~X3)) 
+```
+
+para el modelo fit3  no se rechaza $H_{0}$ (no se rechaza que la varianza sea constante); en el modelo fit2 se rechaza $H_{0}$. En este punto podemos ver que, por ahora, el modelo fit3 es mejor al fit2. 
+
+**Independencia:**
+
+```{r}
+# Para el modelo fit2:
+Box.test(fit2$residuals) 
+Box.test(fit2$residuals,lag=1) 
+Box.test(fit2$residuals,lag=18) 
+Box.test(fit2$residuals,lag=19) 
+Box.test(fit2$residuals,lag=12) 
+Box.test(fit2$residuals,lag=24) 
+```
+
+notamos la presencia de algunas observaciones en las que el _p-value_ es menor a 0.05 por lo que se rechaza la hipótesis nula, es decir, se rechaza que los datos sean independientes. Por otro lado
+
+```{r}
+# Para el modelo fit3:
+Box.test(fit3$residuals) 
+Box.test(fit3$residuals,lag=1) 
+Box.test(fit3$residuals,lag=18) 
+Box.test(fit3$residuals,lag=19) 
+Box.test(fit3$residuals,lag=12) 
+Box.test(fit3$residuals,lag=24) 
+```
+
+vemos que en dos observaciones en particular se está rechazando la hipótesis nula, es decir, se rechaza que dichas observaciones sean independientes.
+
+Se concluye que en ambos modelos no se cumple el supuesto de la independiencia. Por ello, el modelo fit3 es mejor que el modelo fit2. Para realizar de forma más ordenada e ilustrativa la comparación de modelos hemos creado una tabla donde comparamos 5 modelos, de los cuales tres de ellos realizamos el análisis de los supuestos (fiy11, fit2 y fit3) y del resto omitimos el análisis explícitamente (para no hacer más largo este documento). No obstante, en la tabla que se encuentra al final, se ha capturado la información más relevante de los modelos en los cuales no se hizo explícitamente el análisis, con el fin de comparar los 5 modelos y hallar el mejor.
+
+Con base en todo lo anterior, pudimos llegar a la conclusión de que las mejores trasformaciones son ``log(ts_122)`` y ``arima(diff(log(rs_122),12), c(2, 0, 2), seasonal = list(order = c(0, 1, 0), period = 12))`` pues son los que cumplen con la mayoría de los supuestos, tienen los menores resultados en los criterios y con menos parametros insignificantes.
+
+Cabe notar que en todos los modelos no se cumple la independencia, esto se puede deber a que no
+siguen un modelo normal los residuos (ruido blanco).
+
+
+
+### 4. Forecasting
+
+Con el modelo estimado, pronostique $n_new=24 (2 años)$ valores futuros. Obtenga intervalos de predicción.
+
+**Solución:** Finalmente, para la parte de la predicción tenemos:
+
+```{r}
+# Para el modelo log(ys_122)
+
+ajuste <- auto.arima(log(ts_122))
+predicciones <- forecast(ajuste, level = c(95), h=24)
+autoplot(predicciones)
+```
+
+y por otro lado
+
+```{r}
+# Para el modelo arima(diff(log(rs_122),12), c(2, 0, 2), seasonal = list(order = c(0, 1, 0), period = 12))
+
+ajuste2 <- arima(diff(log(ts_122),12), c(2, 0, 2), seasonal = list(order = c(0, 1, 0), period = 12))
+predicciones2 <- forecast(ajuste, h=24)
+autoplot(predicciones2)
+```
+
+donde vemos que ambas predicciones son similares.
+
+### Nota final
+
+Consideremos la gráfica de los rendimientos:
+
+```{r}
+autoplot(diff(log(ts_122)))
+```
+
+de acuerdo a dicho comportamiento vemos de forma clara la presencia de volatilidades. Es por ello que la modelación ARIMA/SARIMA es insuficiente para esta serie de tiempo, lo que, en consecuencia, provoca que alguno (o más) de los supuestos falle. Una alternativa para realizar una modelación de los datos, es utilizar alguno de los modelos GARCH. 
+
+
