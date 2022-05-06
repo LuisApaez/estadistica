@@ -30,4 +30,4 @@
 
 ### Parte 2: Modelos de supervivencia
 
-14. [Tabla actuarial de vida](STS_1.html)
+14. [Tabla actuarial de vida](Estadistica3/p2/STS_1.html)
