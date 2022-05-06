@@ -27,3 +27,7 @@
 12. [Tarea 3](Estadistica3/p1/T3.html)
 
 13. [Proyecto 1](Estadistica3/p1/Proyecto1.html)
+
+### Parte 2: Modelos de supervivencia
+
+14. [Tabla actuarial de vida](STS_1.html)
