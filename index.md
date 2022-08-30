@@ -8,4 +8,6 @@
 
 * \| **Estadística III:** Modelos de supervivencia y series de tiempo \| [Ir](index_stat3.md) \|
 
+* \| **Seminario de Estadística:** Aprendizaje estadístico automatizado \| [Ir](index_stat4.md) \|
+
 
