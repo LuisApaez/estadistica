@@ -1,0 +1,102 @@
+---
+title: "Regresión lineal múltiple"
+author: "Luis Fernando Apáez Álvarez"
+date: "30 de Agosto de 2022"
+---
+
+## Ajuste y pruebas de hipótesis
+
+```{r setup, include=FALSE}
+rm(list = ls(all.names = TRUE))
+gc()
+library(reticulate) # Path to python3.exe
+knitr::opts_chunk$set(warning = F, message = F, error = F, fig.height = 4, fig.width = 8)
+library(xtable)
+library(knitr)
+library(latex2exp)
+library(ggplot2)
+options(digits=2)
+set.seed(20202)
+```
+
+Comenzamos por cargar los datos y ver algunas estadísticas de nuestros datos:
+
+```{r}
+# Cargamos los datos
+library(GGally)
+Datos=read.csv("ejemplo1RLM.csv", header=TRUE )
+summary(Datos)
+```
+Con base en lo anterior podemos ver que tenemos dos variables explicativas ``x_{1}`` y ``x_{2}``. Nos apoyamos mediante un gráfico para ver el comportamiento de nuestros datos
+
+
+```{r}
+par(mfrow=c(1,2), mar=c(4.5, 4.5, 2, 2))
+pairs(Datos)
+```
+
+notamos que nuestras variables explicativas están altamente correlacionadas. De manera intuitiva nos dice que, al incluir ya una variable al modelo, la otro ya no está aportando información adicional para describir nuestro modelo.
+
+
+```{r}
+# Alternativamente con el paquete GGally:
+ggpairs(Datos)
+```
+
+
+
+Un posible modelo es: $\mathbb{E}(Y; X_{1}, X_{2})=\beta_{0}+\beta_{1}X_{1}+\beta_{2}X_{2}$. Para ello, realizamos el ajuste del modelo
+
+
+```{r}
+# Ajuste del modelo
+fit <- lm(y ~ X1 + X2, data=Datos)
+# Informacion del ajuste
+summary(fit)
+```
+
+donde en la prueba F se nos marca un $p-value$ muy pequeño, es decir, encontramos evidencia estadística para asumir que nuestro modelo tiene sentido, esto es, hay evidencia para rechazar la hipótesis nula:
+
+$$
+H_0: \beta_1=0\ \  y\ \  \beta_2=0 \ \ \ vs \ \ \ H_a: \beta_1\neq 0\ \  o  \ \ \beta_2\neq 0
+$$
+
+Considerando también la parte de ``Coefficients``, en las pruebas t individuales de cada variable, notamos que los $p-values$ son grandes y tendremos que realizar alguna consideración sobre nuestras variables explicativas, lo cual veremos más adelante.
+
+
+Podemos obtener los valores de las principales estimaciones puntuales:
+
+```{r}
+# \hat{\beta}
+coef(fit)
+# \hat{V(\hat{\beta})}
+vcov(fit)
+# \hat{\sigma}=\sqrt{SCE/(n-p-1)}
+sigma(fit)
+```
+
+Luego, procederemos a obtener la prueba de la tabla Anova mediante la prueba lineal general:
+
+```{r}
+library(multcomp)
+
+K <- matrix(c(0,1,0,
+              0,0,1), ncol=3, nrow=2, byrow=TRUE)
+m <- c(0,0)
+
+# Utilizamos la prueba lineal general
+summary(glht(fit, linfct=K, rhs=m), test=Ftest())
+```
+
+donde
+
+$$
+
+H_{0}: \left(\begin{array}{cc}\beta_{1}\\\beta_2\\\end{array}\right)=\left(\begin{array}{cc}0 \\ 0 \end{array}\right)
+$$
+
+Una vez que se realiza la prueba asociada a la tabla Anova, la pregunta es si ambas variables aportan información al modelado. Para esto podemos hacer pruebas individuales sobre cada coeficiente usando las pruebas t como vimos antes, o bien utilizando la prueba lineal general. Notemos que las pruebas realizadas en el ``summary(fit)`` no están hechas de manera simultánea, y en él, para la primera línea, se considera $x_{1}=0$ por lo que estamos contrastando el modelo reducido $\mathbb{E}(Y; X_{1}, X_{2})=\beta_{0}+\beta_{2}X_{2}$ versus el modelo completo $\mathbb{E}(Y; X_{1}, X_{2})=\beta_{0}+\beta_{1}X_{1}+\beta_{2}X_{2}$, en otras palabras estamos constrastando $H_0: \beta_1=0 \ \ \ vs\ \ \  H_a: \beta_1\neq 0$, y dado que obtuvimos un $p-value$ grande, entonces no encontramos evidencia suficiente para poder rechazar la hipótesis nula. De manera análoga con la prueba t para la variable $x_{2}$.
+
+
+
+
