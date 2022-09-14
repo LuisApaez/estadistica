@@ -7,3 +7,4 @@
 3. [Ajuste e interpretación de Variables categóricas](Estadistica4/Ejemplo3RLM.html)
 4. [Problema tipo anova](Estadistica4/Ejemplo4RLM.html)
 5. [Verificar los supuestos](Estadistica4/Ejemplo5RLM.html)
+6. [R base vs Tidyverse](Estadistica4/Ejemplo6RLM.html)
